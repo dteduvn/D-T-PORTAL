@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&T Academy – Kết quả học tập</title>
+<style>
+  :root {
+    --green: #27AE60;
+    --red: #E74C3C;
+    --blue: #2471A3;
+    --bg: #FFF8E7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg); color: #333; padding-bottom: 40px;
+  }
+  .header {
+    background: linear-gradient(135deg,#185FA5,#27AE60);
+    color: #fff; padding: 22px 16px; text-align:center;
+  }
+  .header h1 { margin:0; font-size: 22px; }
+  .header p { margin:6px 0 0; font-size: 13px; opacity:0.9; }
+
+  .search-box {
+    max-width: 480px; margin: 20px auto; padding: 0 16px;
+  }
+  .search-card {
+    background:#fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .search-card label { font-size: 13px; font-weight:700; color:#555; display:block; margin-bottom:6px; }
+  .search-card input {
+    width:100%; padding: 12px; font-size: 16px; border:2px solid #ddd; border-radius: 10px;
+    font-family: inherit; box-sizing: border-box;
+  }
+  .search-card button {
+    margin-top: 12px; width: 100%; padding: 12px; font-size: 15px; font-weight: 800;
+    color:#fff; background: var(--blue); border:none; border-radius: 10px; cursor:pointer;
+  }
+
+  .results-wrap { max-width: 600px; margin: 0 auto; padding: 0 16px; }
+
+  .submission-card {
+    background:#fff; border-radius:16px; padding:18px; margin-bottom:14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .sub-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .sub-title { font-size: 16px; font-weight: 800; color:#222; }
+  .sub-date { font-size: 12px; color:#999; margin-top:2px; }
+  .sub-score {
+    font-size: 20px; font-weight: 900; padding: 6px 14px; border-radius: 30px;
+    white-space: nowrap;
+  }
+  .score-good { background:#E1F5EE; color: var(--green); }
+  .score-mid { background:#FFF3CD; color:#C07800; }
+  .score-low { background:#FDEDEC; color: var(--red); }
+
+  .sections-toggle {
+    margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--blue);
+    cursor: pointer; user-select:none;
+  }
+  .sections { display:none; margin-top: 10px; }
+  .sections.open { display:block; }
+
+  .section-block { border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; }
+  .section-name { font-size: 14px; font-weight: 800; color:#444; margin-bottom: 6px; }
+  .section-score { font-size: 12px; color:#888; margin-left:6px; }
+
+  .detail-row {
+    display:flex; gap:8px; align-items:flex-start; padding: 6px 0; font-size: 13px;
+    border-bottom: 1px dashed #eee;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon { flex-shrink:0; font-size: 14px; margin-top:1px; }
+  .detail-text { flex:1; }
+  .detail-q { font-weight:700; color:#444; }
+  .detail-ans { color:#666; margin-top:2px; }
+  .detail-ans .wrong { color: var(--red); text-decoration: line-through; }
+  .detail-ans .correct { color: var(--green); font-weight:700; }
+
+  .retry-btn {
+    margin-top: 14px; width:100%; padding: 12px; font-size: 14px; font-weight: 800;
+    color:#fff; background: linear-gradient(135deg,#FF6B9D,#FF8E53); border:none;
+    border-radius: 30px; cursor:pointer;
+  }
+
+  .empty-state { text-align:center; color:#999; padding: 40px 16px; font-size: 14px; }
+  .loading { text-align:center; color:#999; padding: 40px 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 Kết quả học tập</h1>
+  <p>Student Learning Results · D&T Academy</p>
+</div>
+
+<div class="search-box">
+  <div class="search-card">
+    <label for="name-input">Tên học sinh / Student name</label>
+    <input type="text" id="name-input" placeholder="Nhập tên học sinh...">
+    <button id="search-btn">🔍 Xem kết quả / View results</button>
+  </div>
+</div>
+
+<div class="results-wrap" id="results-wrap"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqCMHVsE7pLmcP-iTjOh0F_GW2v4U8X20",
+  authDomain: "dt-academy-tracker.firebaseapp.com",
+  projectId: "dt-academy-tracker",
+  storageBucket: "dt-academy-tracker.firebasestorage.app",
+  messagingSenderId: "118306441305",
+  appId: "1:118306441305:web:906735a9c0a830a8214948"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const nameInput = document.getElementById('name-input');
+const searchBtn = document.getElementById('search-btn');
+const resultsWrap = document.getElementById('results-wrap');
+
+// Pre-fill from localStorage if available
+const savedName = localStorage.getItem('dt_student_name');
+if (savedName) nameInput.value = savedName;
+
+searchBtn.onclick = () => loadResults();
+nameInput.onkeydown = (e) => { if (e.key === 'Enter') loadResults(); };
+
+async function loadResults() {
+  const name = nameInput.value.trim();
+  if (!name) return;
+
+  resultsWrap.innerHTML = '<div class="loading">⏳ Đang tải...</div>';
+
+  try {
+    const q = query(
+      collection(db, 'submissions'),
+      where('studentName', '==', name),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      resultsWrap.innerHTML = '<div class="empty-state">Chưa có kết quả nào cho tên này.<br>No results found for this name.</div>';
+      return;
+    }
+
+    resultsWrap.innerHTML = '';
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      resultsWrap.appendChild(renderSubmission(data));
+    });
+  } catch (e) {
+    console.error(e);
+    resultsWrap.innerHTML = '<div class="empty-state">Có lỗi xảy ra, vui lòng thử lại sau.<br>' + e.message + '</div>';
+  }
+}
+
+function renderSubmission(data) {
+  const card = document.createElement('div');
+  card.className = 'submission-card';
+
+  const pct = data.maxScore > 0 ? (data.totalScore / data.maxScore * 100) : 0;
+  let scoreClass = 'score-low';
+  if (pct >= 80) scoreClass = 'score-good';
+  else if (pct >= 50) scoreClass = 'score-mid';
+
+  let dateStr = '';
+  if (data.submittedAtClient) {
+    const d = new Date(data.submittedAtClient);
+    dateStr = d.toLocaleString('vi-VN');
+  }
+
+  card.innerHTML = `
+    <div class="sub-header">
+      <div>
+        <div class="sub-title">${escapeHtml(data.lessonName || data.lessonId || 'Bài tập')}</div>
+        <div class="sub-date">${dateStr}</div>
+      </div>
+      <div class="sub-score ${scoreClass}">${data.totalScore} / ${data.maxScore}</div>
+    </div>
+    <div class="sections-toggle">▶ Xem chi tiết đúng/sai / View details</div>
+    <div class="sections"></div>
+  `;
+
+  const toggle = card.querySelector('.sections-toggle');
+  const sectionsEl = card.querySelector('.sections');
+  toggle.onclick = () => {
+    sectionsEl.classList.toggle('open');
+    toggle.textContent = (sectionsEl.classList.contains('open') ? '▼' : '▶') + ' Xem chi tiết đúng/sai / View details';
+  };
+
+  (data.sections || []).forEach(sec => {
+    const block = document.createElement('div');
+    block.className = 'section-block';
+    let rowsHtml = '';
+    (sec.details || []).forEach(d => {
+      const icon = d.correct ? '✅' : '❌';
+      let ansHtml = '';
+      if (d.studentAnswer !== undefined) {
+        if (d.correct) {
+          ansHtml = '<div class="detail-ans"><span class="correct">' + escapeHtml(String(d.studentAnswer)) + '</span></div>';
+        } else {
+          ansHtml = '<div class="detail-ans"><span class="wrong">' + escapeHtml(String(d.studentAnswer || '(không trả lời)')) + '</span>'
+            + (d.correctAnswer !== undefined ? ' → <span class="correct">' + escapeHtml(String(d.correctAnswer)) + '</span>' : '')
+            + '</div>';
+        }
+      }
+      rowsHtml += `<div class="detail-row"><div class="detail-icon">${icon}</div><div class="detail-text"><div class="detail-q">${escapeHtml(d.question || '')}</div>${ansHtml}</div></div>`;
+    });
+    block.innerHTML = `<div class="section-name">${escapeHtml(sec.name)}<span class="section-score">${sec.score} / ${sec.max}</span></div>${rowsHtml}`;
+    sectionsEl.appendChild(block);
+  });
+
+  if (pct < 80) {
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'retry-btn';
+    retryBtn.textContent = '🔄 Làm lại bài này / Retry this lesson';
+    retryBtn.onclick = () => {
+      if (data.lessonUrl) {
+        window.open(data.lessonUrl, '_blank');
+      } else {
+        alert('Không tìm thấy đường dẫn bài học.');
+      }
+    };
+    card.appendChild(retryBtn);
+  }
+
+  return card;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Auto-load if name pre-filled
+if (savedName) loadResults();
+</script>
+
+</body>
+</html>
