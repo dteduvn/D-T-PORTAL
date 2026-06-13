@@ -50,6 +50,8 @@ body{font-family:'Nunito',sans-serif;background:#FDFAF3;min-height:100vh;color:#
 
 /* ── GUIDE STRIP ── */
 .guide-strip{background:#FFF3E0;border-top:2px solid #FFB74D;border-bottom:2px solid #FFB74D;padding:10px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.dashboard-strip{background:#E3F2FD;border-top:2px solid #185FA5;border-bottom:2px solid #185FA5;padding:10px 16px;display:flex;align-items:center;gap:8px;text-decoration:none;}
+.dashboard-strip-text{font-size:13px;font-weight:700;color:#185FA5;flex:1;}
 .guide-strip-text{font-size:13px;font-weight:700;color:#E65100;flex:1;}
 .guide-arrow{font-size:15px;color:#E65100;transition:transform .3s;}
 .guide-arrow.open{transform:rotate(180deg);}
@@ -118,6 +120,11 @@ body{font-family:'Nunito',sans-serif;background:#FDFAF3;min-height:100vh;color:#
   </div>
 </div>
 
+<a class="dashboard-strip" href="https://dteduvn.github.io/D-T-PORTAL/dashboard.html" target="_blank">
+  <span style="font-size:18px;">📊</span>
+  <span class="dashboard-strip-text">Xem kết quả luyện tập của con — Bấm vào đây</span>
+  <span style="font-size:14px;color:#185FA5;">›</span>
+</a>
 <div class="guide-strip" onclick="toggleGuide()">
   <span style="font-size:18px;">⚠️</span>
   <span class="guide-strip-text">Hướng dẫn mở bài trên Zalo — Bấm để xem</span>
